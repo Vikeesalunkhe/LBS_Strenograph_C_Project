@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                printf("failed to Encoding\n");
+                printf("Failed to Encoding\n");
             }
         }
         else 
