@@ -7,15 +7,15 @@ typedef unsigned int uint;
 /* Status will be used in fn. return type */
 typedef enum
 {
-    e_success,
-    e_failure
+    e_success,  //0
+    e_failure   //1
 } Status;
 
 typedef enum
 {
-    e_encode,
-    e_decode,
-    e_unsupported
+    e_encode,       //0
+    e_decode,       //1
+    e_unsupported   //2
 } OperationType;
 
 #endif
