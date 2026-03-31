@@ -156,72 +156,86 @@ Status copy_bmp_header(FILE *fptr_src_image, FILE *fptr_dest_image)
     return e_success;
 }
 
-// Status encode_byte_to_lsb(char data, char *image_buffer)
-// {
-//     for (int i = 0; i < 8; i++)
-//     {
-//         image_buffer[i] = (image_buffer[i] & 0xFE) | ((data >> i) & 1);    //(image_buffer[i] & 0xFE)  : clear 0 pos bit every byte and set data bit pos wise
-//     }
-//     return e_success;
-// }
-
-
-// Status encode_data_to_image(char *data, int size, EncodeInfo *encInfo)   //"#*"
-// {
-//     for (int i = 0; i< size; i++)
-//     {
-//         fread(encInfo->image_data, 8, 1, encInfo->fptr_src_image);
-//         encode_byte_to_lsb(data[i], encInfo->image_data);
-//         fwrite(encInfo->image_data, 8, 1, encInfo->fptr_stego_image);
-//     }
-//     return e_success;
-// }
-
-
-
-
-//encode magic string
-Status encode_magic_string(const char *magic_string, EncodeInfo *encInfo)
+Status encode_byte_to_lsb(char data, char *image_buffer)
 {
-    //encode_data_to_image(magic_string, strlen(magic_string), encInfo);
+    for (int i = 0; i < 8; i++)
+    {
+        image_buffer[i] = (image_buffer[i] & 0xFE) | ((data >> i) & 1);    //(image_buffer[i] & 0xFE)  : clear 0 pos bit every byte and set data bit pos wise
+    }
     return e_success;
 }
 
-// Status encode_size_to_lsb(int size, EncodeInfo *encInfo)
-// {
-//     char str[32];
-//     fread(str, 32, 1, encInfo->fptr_src_image);
-//     for (int i = 0; i < 32; i++)
-//     {
-//         str[i] = (str[i] & 0xFE) ((size >> i) & i));
-//     }
-// }
+
+Status encode_data_to_image(char *data, int size, EncodeInfo *encInfo)   //"#*"
+{
+    for (int i = 0; i< size; i++)
+    {
+        fread(encInfo->image_data, 8, 1, encInfo->fptr_src_image);
+        encode_byte_to_lsb(data[i], encInfo->image_data);
+        fwrite(encInfo->image_data, 8, 1, encInfo->fptr_stego_image);
+    }
+    return e_success;
+}
 
 
-// Status encode_secret_file_extn_size(int file_size, EncodeInfo *encInfo)
-// {
-//     encode_size_to_lsb(file_size, encInfo);
-// }
+//encode magic string
+Status encode_magic_string(char *magic_string, EncodeInfo *encInfo)
+{
+    encode_data_to_image(magic_string, strlen(magic_string), encInfo);
+    return e_success;
+}
+
+Status encode_size_to_lsb(int size, EncodeInfo *encInfo)
+{
+    char str[32];
+    fread(str, 32, 1, encInfo->fptr_src_image);
+    for (int i = 0; i < 32; i++)
+    {
+        str[i] = (str[i] & 0xFE) | ((size >> i) & i);
+    }
+    fwrite(str, 32, 1, encInfo->fptr_stego_image);
+
+    return e_success;
+}
+
+
+Status encode_secret_file_extn_size(int file_size, EncodeInfo *encInfo)
+{
+    encode_size_to_lsb(file_size, encInfo);
+    return e_success;
+}
+
+Status encode_secret_file_extn(char *file_extn, EncodeInfo *encInfo)
+{
+    encode_data_to_image(file_extn, strlen(file_extn), encInfo);
+    return e_success;
+}
+
+Status encode_secret_file_size(long file_size, EncodeInfo *encInfo)
+{
+    encode_size_to_lsb(file_size, encInfo);
+    return e_success;
+}
 
 
 
-// Status encode_secret_file_data(EncodeInfo *encInfo)
-// {
-//     char data[encInfo->size_secret_file];
-//     rewind(encInfo->fptr_secret);
-//     fgets(data, encInfo->size_secret_file, encInfo->fptr_secret);
-//     encode_data_to_image(data, encInfo->size_secret_file, encInfo->fptr_secret);
-//     return e_success;
-// }
+Status encode_secret_file_data(EncodeInfo *encInfo)
+{
+    char data[encInfo->size_secret_file];
+    rewind(encInfo->fptr_secret);
+    fgets(data, encInfo->size_secret_file, encInfo->fptr_secret);
+    encode_data_to_image(data, encInfo->size_secret_file, encInfo);
+    return e_success;
+}
 
-// Status copy_remaining_img_data(EncodeInfo *encInfo)
-// {
-//     int size = 54 + encInfo->image_data - ftell(encInfo->fptr_src_image);
-//     char rem_data[size];
-//     fread(rem_data, size, 1, encInfo->fptr_src_image);
-//     fwrite(rem_data, size, 1, encInfo->fptr_stego_image);
-//     return e_success;
-// }
+Status copy_remaining_img_data(EncodeInfo *encInfo)
+{
+    int size = 54 + encInfo->image_capacity - ftell(encInfo->fptr_src_image);
+    char rem_data[size];
+    fread(rem_data, size, 1, encInfo->fptr_src_image);
+    fwrite(rem_data, size, 1, encInfo->fptr_stego_image);
+    return e_success;
+}
 
 
 Status do_encoding(EncodeInfo *encInfo)
@@ -238,7 +252,53 @@ Status do_encoding(EncodeInfo *encInfo)
                 if (encode_magic_string(MAGIC_STRING, encInfo) == e_success)
                 {
                     printf("INFO : Encoded Magic string successfully\n");
-
+                    strcpy(encInfo->extn_secret_file, strchr(encInfo->secret_fname, '.'));  
+                    printf("%s\n", encInfo->extn_secret_file);
+                    if (encode_secret_file_extn_size(strlen(encInfo->extn_secret_file), encInfo) == e_success)
+                    {
+                        printf("Encoded secret file extn size successfully\n");
+                        if (encode_secret_file_extn(encInfo->extn_secret_file, encInfo) == e_success)
+                        {
+                            printf("Encoded secret file extn successfullt\n");
+                            if (encode_secret_file_size(encInfo->size_secret_file, encInfo) == e_success)
+                            {
+                                printf("Encoded secret file size successfully\n");
+                                if (encode_secret_file_data(encInfo) == e_success)
+                                {
+                                    printf("Encoded secret file data successfully\n");
+                                    if (copy_remaining_img_data(encInfo) == e_success)
+                                    {
+                                        printf("Copied remanning data successfullt\n");
+                                    }
+                                    else
+                                    {
+                                        printf("Failed to copy remanning data\n");
+                                        return e_failure;
+                                    }
+                                }
+                                else
+                                {
+                                    printf("Failed to encode secret file data\n");
+                                    return e_failure;
+                                }
+                            }
+                            else
+                            {
+                                printf("Failed to Encode secret file size\n");
+                                return e_failure;
+                            }
+                        }
+                        else
+                        {
+                            printf("Failed to encode secret file extn successfullt\n");
+                            return e_failure;
+                        }
+                    }
+                    else
+                    {
+                        printf("Failed to encode file extn size\n");
+                        return e_failure;
+                    }
                 }
                 else
                 {
