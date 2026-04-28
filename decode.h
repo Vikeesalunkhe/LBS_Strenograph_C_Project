@@ -1,64 +1,68 @@
 #ifndef DECODE_H
 #define DECODE_H
 
-#include <stdio.h>
-#include <stdint.h>
-#include<string.h>
-#include "common.h"
 #include "types.h"
 
-typedef unsigned int uint;
+/*
+ * Structure to store information required for
+ * decoding hidden data from a stego image
+ */
+#define MAX_SECRET_BUF_SIZE 1
+#define MAX_IMAGE_BUF_SIZE (MAX_SECRET_BUF_SIZE * 8)
+#define MAX_FILE_SUFFIX 4
 
-/* Structure for Decoding Info */
 typedef struct _DecodeInfo
 {
-    /* Source Image info */
-    char *src_image_fname;
-    FILE *fptr_src_image;
+    /* Stego Image Info */
+    char *stego_image_fname;
+    FILE *fptr_stego_image;
 
-    /* Decoded file info */
-    char dest_image_fname[256];
-    FILE *dest_image_fpointer;
+    /* Decoded File Info */
+    char *output_fname;
+    FILE *fptr_output;
 
-    /* Extension & file sizes */
-    uint extn_size;
-    uint size_src_file;
+    char extn_secret_file[MAX_FILE_SUFFIX];
+    long size_secret_file;
 
-    char extn[20];
+    /* Buffers */
+    char image_data[MAX_IMAGE_BUF_SIZE];
 
 } DecodeInfo;
 
 
-/* Function Prototypes */
+/* Decoding function prototypes */
 
-/* Read & validate arguments */
+/* Read and validate decode args from argv */
 Status read_and_validate_decode_args(char *argv[], DecodeInfo *decInfo);
 
-/* Open required files */
-Status open_decoding_files(DecodeInfo *decInfo);
+/* Open files for decoding */
+Status open_decode_files(DecodeInfo *decInfo);
 
-/* Decode magic string */
-Status decode_magic_string(DecodeInfo *decInfo);
-
-/* Decode 1 byte from 8 bytes (LSB) */
-char decode_byte_from_lsb(char data, char *image_buffer);
-
-/* Decode extension size */
-Status decode_secret_file_extn_size(DecodeInfo *decInfo);
-
-/* Decode the extension */
-Status decode_secret_file_extn(int size, DecodeInfo *decInfo);
-
-/* Decode secret file data size */
-Status decode_secret_file_data_size(DecodeInfo *decInfo);
-
-/* Decode actual data */
-Status decode_secret_file_data(int size, DecodeInfo *decInfo);
-
-/* Final decoding operation */
+/* Perform the decoding */
 Status do_decoding(DecodeInfo *decInfo);
 
-/* Decode 32-bit size from LSB */
-uint decode_size_from_lsb(char *buffer);
+/* Check for magic string in stego image */
+Status decode_magic_string(char *magic_string, DecodeInfo *decInfo);
+
+/* Decode a single byte from 8 image bytes (LSB) */
+char decode_byte_from_lsb(char *image_buffer);
+
+/* Decode data of given size from stego image */
+Status decode_data_from_image(char *data, int size, DecodeInfo *decInfo);
+
+/* Decode a 32-bit size/int from stego image */
+Status decode_size_from_lsb(int *size, DecodeInfo *decInfo);
+
+/* Decode secret file extension size */
+Status decode_secret_file_extn_size(int *extn_size, DecodeInfo *decInfo);
+
+/* Decode secret file extension string */
+Status decode_secret_file_extn(DecodeInfo *decInfo, int extn_size);
+
+/* Decode secret file size */
+Status decode_secret_file_size(long *file_size, DecodeInfo *decInfo);
+
+/* Decode and write secret file data */
+Status decode_secret_file_data(DecodeInfo *decInfo);
 
 #endif

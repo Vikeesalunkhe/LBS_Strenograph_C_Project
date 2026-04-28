@@ -191,7 +191,7 @@ Status encode_size_to_lsb(int size, EncodeInfo *encInfo)
     fread(str, 32, 1, encInfo->fptr_src_image);
     for (int i = 0; i < 32; i++)
     {
-        str[i] = (str[i] & 0xFE) | ((size >> i) & i);
+        str[i] = (str[i] & 0xFE) | ((size >> i) & 1);
     }
     fwrite(str, 32, 1, encInfo->fptr_stego_image);
 
@@ -223,7 +223,7 @@ Status encode_secret_file_data(EncodeInfo *encInfo)
 {
     char data[encInfo->size_secret_file];
     rewind(encInfo->fptr_secret);
-    fgets(data, encInfo->size_secret_file, encInfo->fptr_secret);
+    fread(data, 1, encInfo->size_secret_file, encInfo->fptr_secret);
     encode_data_to_image(data, encInfo->size_secret_file, encInfo);
     return e_success;
 }
